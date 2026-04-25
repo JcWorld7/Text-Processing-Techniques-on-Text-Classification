@@ -14,8 +14,14 @@ library(caret)
 library(pROC)
 
 # starts
-setwd("/Users/jayceeli/Library/CloudStorage/OneDrive-UniversityofIowa/job/mental_health/pdf/PreProcessing/myData")
-dat <- read.csv("AllDataMarch19.csv")
+# setwd("/Users/jayceeli/Library/CloudStorage/OneDrive-UniversityofIowa/job/mental_health/pdf/PreProcessing/myData")
+# dat <- read.csv("AllDataMarch19.csv")
+
+install.packages("here")
+library(here)
+
+dat <- read.csv(here("data", "AllDataMarch19.csv"))
+
 str(dat)
 dim(dat)
 names(dat)
