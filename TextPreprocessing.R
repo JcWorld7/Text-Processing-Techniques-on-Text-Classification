@@ -73,68 +73,6 @@ testA <- data.frame(pmid = test1$Key,
 # setwd("~/Jaycee/Code")
 # source("Train.R")
 
-# fitting our model
-nFolds <- 10
-foldid <- 1 + (1:nrow(train0) %% nFolds)
-
-textCv <- cv.glmnet(dtm, y = as.factor(train0$included),
-                    alpha = 0.9, family = "binomial",
-                    type.measure = 'auc', 
-                    nfolds = nFolds, 
-                    foldid = foldid,
-                    intercept = F)
-plot(textCv)
-length(row.names(textCv$glmnet.fit$beta))
-row.names(textCv$glmnet.fit$beta)[1000:8000]
-
-# create prediction for our data with our model 
-# just verification
-Textpreds <- as.numeric(predict(textCv, dtm, 
-                                type = 'class',
-                                s = textCv$lambda.1se))
-# ROC
-textRoc <- roc(train0$included, Textpreds)
-print(textRoc)
-
-# confusion Matrix
-confusion <- confusionMatrix(as.factor(Textpreds), as.factor(train0$included))
-confusion
-
-
-#---------------- Process data and applied the model to new data (the studies without prediction)----
-#-------------------- cleaning and processing ---------------------------
-# source("Test.R")
-
-TextpredsTest <- as.numeric(predict(textCv, 
-                                    dtmTest, 
-                                    type = 'class', # for classification 1 or 0
-                                    #type = 'response', # for probabilities 
-                                    s = textCv$lambda.min))
-
-confusion <- confusionMatrix(as.factor(TextpredsTest), as.factor(test1$included))
-confusion
-
-
-# export results into a data set
-mydat <- data.frame(cbind("RecordID" = test0$Author, 
-                          "Key" = test$pmid,
-                          "ProbInclude" = TextpredsTest,
-                          "Decision" = ifelse(TextpredsTest <= .5, 0, 1),
-                          "title" = test0$Title,
-                          "abstract" = test0$Abstract.Note))
-
-table(mydat$Decision)
-
-dim(mydat)
-names(test0)
-df0 <- merge(test0, mydat[, c("Key", "Decision")], by = "Key", all.x = TRUE)
-table(df0$Decision)
-
-# if uncomment the line below we write a csv file
-# write.csv(df0, "studiesWithDecisionMarch19.csv")
-
-
-
 ###################################### TRAIN #################################################
 
 library(tokenizers)
@@ -168,6 +106,38 @@ vectorizer <- vocab_vectorizer(v)
 dtm <- create_dtm(it, vectorizer)
 
 
+# fitting our model
+nFolds <- 10
+foldid <- 1 + (1:nrow(train0) %% nFolds)
+
+textCv <- cv.glmnet(dtm, y = as.factor(train0$included),
+                    alpha = 0.9, family = "binomial",
+                    type.measure = 'auc', 
+                    nfolds = nFolds, 
+                    foldid = foldid,
+                    intercept = F)
+plot(textCv)
+length(row.names(textCv$glmnet.fit$beta))
+row.names(textCv$glmnet.fit$beta)[1000:8000]
+
+# create prediction for our data with our model 
+# just verification
+Textpreds <- as.numeric(predict(textCv, dtm, 
+                                type = 'class',
+                                s = textCv$lambda.1se))
+# ROC
+textRoc <- roc(train0$included, Textpreds)
+print(textRoc)
+
+# confusion Matrix
+confusion <- confusionMatrix(as.factor(Textpreds), as.factor(train0$included))
+confusion
+
+
+#---------------- Process data and applied the model to new data (the studies without prediction)----
+#-------------------- cleaning and processing ---------------------------
+# source("Test.R")
+
 ######################################## TEST #################################################
 
 
@@ -190,4 +160,38 @@ itTest <- itoken(testA$text,pmid = test$pmid)
 #---------------- frequency of words -----------------
 
 dtmTest <- create_dtm(itTest, vectorizer) 
+
+
+
+TextpredsTest <- as.numeric(predict(textCv, 
+                                    dtmTest, 
+                                    type = 'class', # for classification 1 or 0
+                                    #type = 'response', # for probabilities 
+                                    s = textCv$lambda.min))
+
+confusion <- confusionMatrix(as.factor(TextpredsTest), as.factor(test1$included))
+confusion
+
+
+# export results into a data set
+mydat <- data.frame(cbind("RecordID" = test0$Author, 
+                          "Key" = test$pmid,
+                          "ProbInclude" = TextpredsTest,
+                          "Decision" = ifelse(TextpredsTest <= .5, 0, 1),
+                          "title" = test0$Title,
+                          "abstract" = test0$Abstract.Note))
+
+table(mydat$Decision)
+
+dim(mydat)
+names(test0)
+df0 <- merge(test0, mydat[, c("Key", "Decision")], by = "Key", all.x = TRUE)
+table(df0$Decision)
+
+# if uncomment the line below we write a csv file
+# write.csv(df0, "studiesWithDecisionMarch19.csv")
+
+
+
+
 
